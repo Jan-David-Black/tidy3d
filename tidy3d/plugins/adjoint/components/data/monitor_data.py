@@ -315,5 +315,5 @@ JaxMonitorDataType = Union[JaxModeData, JaxDiffractionData]  # , JaxFieldData]
 JAX_MONITOR_DATA_MAP = {
     DiffractionData: JaxDiffractionData,
     ModeData: JaxModeData,
-    # FieldData: JaxFieldData,
+    FieldData: JaxFieldData,
 }
