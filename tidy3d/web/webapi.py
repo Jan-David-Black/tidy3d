@@ -16,7 +16,7 @@ from rich.progress import Progress
 
 from .environment import Env
 from .simulation_task import SimulationTask, SIM_FILE_HDF5, Folder
-from .sim_cache import download_sim_cache
+from .sim_cache import download_sim_cache, upload_sim_cache
 from .task import TaskId, TaskInfo
 from ..components.data.sim_data import SimulationData
 from ..components.simulation import Simulation
@@ -143,6 +143,7 @@ def upload(  # pylint:disable=too-many-locals,too-many-arguments
     progress_callback: Callable[[float], None] = None,
     simulation_type: str = "tidy3d",
     parent_tasks: List[str] = None,
+    force: bool = False,
 ) -> TaskId:
     """Upload simulation to server, but do not start running :class:`.Simulation`.
 
@@ -176,9 +177,9 @@ def upload(  # pylint:disable=too-many-locals,too-many-arguments
     To start the simulation running, must call :meth:`start` after uploaded.
     """
     simulation.validate_pre_upload()
-    sim_cache = download_sim_cache()
+    sim_cache = download_sim_cache() # attention not thread safe
     key = hash(simulation.json())
-    if key in sim_cache:
+    if key in sim_cache and not force:
         log.debug("Reusing task.")
         task = SimulationTask.get(sim_cache[key])
         return task.task_id
@@ -188,6 +189,12 @@ def upload(  # pylint:disable=too-many-locals,too-many-arguments
     task = SimulationTask.create(
         simulation, task_name, folder_name, callback_url, simulation_type, parent_tasks
     )
+    if key in sim_cache:
+        sim_cache['duplicates'].append(task.task_id)
+    else:
+        sim_cache[key] = task.task_id
+    upload_sim_cache(sim_cache)
+    
     if verbose:
         console = Console()
         console.log(f"Created task '{task_name}' with task_id '{task.task_id}'.")
