@@ -16,6 +16,7 @@ from rich.progress import Progress
 
 from .environment import Env
 from .simulation_task import SimulationTask, SIM_FILE_HDF5, Folder
+from .sim_cache import download_sim_cache
 from .task import TaskId, TaskInfo
 from ..components.data.sim_data import SimulationData
 from ..components.simulation import Simulation
@@ -174,8 +175,14 @@ def upload(  # pylint:disable=too-many-locals,too-many-arguments
     ----
     To start the simulation running, must call :meth:`start` after uploaded.
     """
-
     simulation.validate_pre_upload()
+    sim_cache = download_sim_cache()
+    key = hash(simulation.json())
+    if key in sim_cache:
+        log.debug("Reusing task.")
+        task = SimulationTask.get(sim_cache[key])
+        return task.task_id
+        
     log.debug("Creating task.")
 
     task = SimulationTask.create(
@@ -240,7 +247,8 @@ def start(
     task = SimulationTask.get(task_id)
     if not task:
         raise ValueError("Task not found.")
-    task.submit(solver_version=solver_version, worker_group=worker_group)
+    if task.status == 'draft':
+        task.submit(solver_version=solver_version, worker_group=worker_group)
 
 
 @wait_for_connection
