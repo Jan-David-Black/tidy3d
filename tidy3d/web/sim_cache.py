@@ -63,7 +63,7 @@ def build_sim_cache():
         continue
       try:
         if task.get_simulation() is not None:
-          key = hash(task.simulation.json())
+          key = str(hash(task.simulation.json()))
           if key in sim_cache:
             sim_cache['duplicates'].append(id)
             print('duplicate_found')
