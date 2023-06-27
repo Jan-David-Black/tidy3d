@@ -178,7 +178,7 @@ def upload(  # pylint:disable=too-many-locals,too-many-arguments
     """
     simulation.validate_pre_upload()
     sim_cache = download_sim_cache() # attention not thread safe
-    key = hash(simulation.json())
+    key = str(hash(simulation.json()))
     if key in sim_cache and not force:
         log.debug("Reusing task.")
         task = SimulationTask.get(sim_cache[key])
